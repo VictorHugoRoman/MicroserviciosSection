@@ -117,3 +117,5 @@ dist
 
 #ficheros que crea el sistema operativo del Mac (OS X) automáticamente.
 *.DS_Store
+
+*.rar
