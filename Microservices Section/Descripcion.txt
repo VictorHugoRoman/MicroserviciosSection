@@ -1,0 +1,8 @@
+**implementacion de microservicios**
+    Primero crearemos una aplicacion monolitica y despues esta misma la implementaremos como microservicio.
+    La informacion la pondremos en memoria, la aplicacion tendrá 3 endpoints que nos dara listado de vehiculos, libros y usuarios.
+    entonces para pasarla a microservicios, imagenimos q l endpoint de libros s l mas solicitado tenemos q escalar la aplicacion completa
+    es decir el monolito completo por lo tanto el servicio de vehiculo y usuarios q no esta siendo tan solicitados.
+
+    En la migracion tendremos q implementar un api gateway q no es nada mas q un ente q c encargara de recibir las peticiones y luego
+    las pasara al microservicio responsable de responder en nuestro caso usaremos nginex para el gateway.

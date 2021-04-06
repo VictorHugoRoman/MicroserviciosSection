@@ -1,0 +1,93 @@
+**implementacion Docker**
+    migracion de la app monolitica a microservicios
+
+Paso 1: Crear la carpeta microservices
+  1.1 Crear las carpetas book-service, car-service, user-service. Aqui van c/u d nuestros servicios.
+Paso 2: En la carpeta user-service crear la carpeta src.
+  2.1 Crear un proyecto de node, ejecutar comando "npm init -i".
+    "-i": configuracion por defecto.
+    2.1.1 Configurar el script start con el comando "node index.js", esto para q corra o inicie el archivo index.
+  2.2 instalar la dependencia de desarrollo express, ejecutar comando "npm i express"
+  2.3 Crear el archivo index.js, este levantara o iniciar el server api.
+  2.4 Crear el archivo app.js adentro de la carpeta src, aqui estara nuestro servicio.
+  2.5 Crear el archivo Dockerfile.
+      Entendiendo el archivo Dockerfile:
+        FROM node -> desde node, donde node es la imagen q tenemos 
+        COPY . /app -> copiamos todo lo q esta en raiz "." a la ruta "/app" q tendra el contenedor
+        WORKDIR /app -> directorio contexto de los comandos q c ejecutaran n l contenedor, todos los comandos q requieran el directorio tendran el valor "/app"
+        RUN npm install --only=production -> instalara todas las dependencias de la app una vez levantado el contenedor, ademas la app se contruye como produccion
+        ENV PORT 3000 -> Creamos la variable de entorno PORT para el puerto de nuestra app, para agregar mas variables hacemos lo mismo con otra instruaccion abajo
+        EXPOSE 3000 -> puerto para el mapeo con nuestro host, es decir q mediante nuestro host podemos acceder a la app por este puerto
+        ENTRYPOINT ["npm", "start"] -> levantamos nuestra app en el contenedor.
+      Comandos de Docker: FROM, COPY, WORKDIR, RUN, ENV, EXPOSE, ENTRYPOINT.
+      Nota: vamos a correr nuestro Dockerfile desde docker-compose.
+Paso 3: Copiar todo lo q esté adentro de la carpeta user-service menos la carpeta de node_modules, y pegar en los otros servicios car-service, user-service.
+Paso 4: Configurar los archivos copiados:
+  4.1: index.js, cambiar la leyenda del console.log.
+  4.2: app.js, Cambiar la configuracion del servicio para su respectiva naturaleza y en la ruta poner la v2.
+  4.3: package.json, cambiar el valor del tag name por el nombre del microservicio.
+Paso 5 Crear el archivo nginx.conf para la configuracion de los microservicios, el anterior lo renonmbre nginx-Monolithic.conf.
+        como no es un archivo para la app en sí de microservices lo podemos poner en "Microservicios Section".
+        podemos ponerle cualquier nombre pero es buena practica poner nombres relativos.
+        Recordar q usamos el servidor nginx de gateway, es decir q cuando un cliente acceda a un servicio lo hara mediante nginx y este lo redirige al endpoint q configuremos.
+        Entendiendo el archivo:
+            server { --> define el servidor principal en nginx.conf
+                listen 8080; --> directiva q define l puerto expuesto a utilizar para las solicitudes entrantes y no el puerto predeterminado. para nuestra api gateway 
+                location /api/v2/users { --> location ruta expuesta para el cliente q redirige con el sig proxy_pass. ejemplo como accede el cliente: localhost:8080/api/v2/users;
+                    proxy_pass http://users:3000/api/v2/users; --> nuestro microservicio expuesto internamente en la red de Doocker, Docker crea la red: 
+                                                                  Entendiendo la ruta: "users:3000" : users:  nombre del servicio q pusimos en Docker-Compose, 3000: Puerto expuesto en Dockerfile
+                }
+
+                location /api/v2/books {  --> location ruta expuesta para el cliente q redirige con el sig proxy_pass. ejemplo como accede el cliente: localhost:8080/api/v2/books;
+                    proxy_pass http://books:3000/api/v2/books; --> nuestro microservicio expuesto internamente en la red de Doocker, Docker crea la red: 
+                                                                  Entendiendo la ruta: "books:3000" : books: nombre del servicio q pusimos en Docker-Compose, 3000: Puerto expuesto en Dockerfile
+                }
+
+                location /api/v2/cars { --> location ruta expuesta para el cliente q redirige con el sig proxy_pass. ejemplo como accede el cliente: localhost:8080/api/v2/cars;
+                    proxy_pass http://cars:3000/api/v2/cars; --> nuestro microservicio expuesto internamente en la red de Doocker, Docker crea la red: 
+                                                                     Entendiendo la ruta: "cars:3000" : cars: nombre del servicio q pusimo en Docker-Compose, 3000: Puerto expuesto en Dockerfile
+                }
+
+                location / { --> location ruta expuesta para el cliente q redirige con el sig proxy_pass. ejemplo como accede el cliente: localhost:8080/api/v1/Nombreservicio; es nuesta app monolitica
+                    proxy_pass http://monolithic:3000/; --> nuestra app monolitica, Entendiendo la ruta, Docker crea la red: 
+                                                                    "monolithic:3000" : monolithic:  nombre del servicio q pusimos en Docker-Compose, 3000: Puerto expuesto en Dockerfile
+                }
+            }        
+paso 6: Agregar el archivo docker-compose.yml para la configuracion de la app microservices, dentro de Microservices Section, 
+    el anterior lo renombre docker-compose-Monolithic.yml.
+    Entendiendo el archivo:
+            version: "3" -> version de nuestro docker-compose, esto porque docker evoluciona e integra nuevas instruccion y tecnicas en las mismas
+            services: -> tag para los servicios
+              monolithic: -> servicio 1, "monolithic" sería el nombre del servicio, este es nuestra app monolitica
+                build: ./monolithic -> le decimos con l ".", q s l archivo Dockerfile, q s l q compila nuestra aplicacion, q esta dentro de monolithic
+
+              users: -> servicio 2, "users" sería el nombre del servicio, este es el microservicio para los usuarios
+                build: ./microservices/user-service -> le decimos con l ".", q s l archivo Dockerfile, q s l q compila nuestro microservicio, q esta dentro de /microservices/user-service
+
+              cars: -> servicio 3, "cars" sería el nombre del servicio, este es l microservicio para los autos
+                build: ./microservices/car-service -> le decimos con l ".", q s l archivo Dockerfile, q s l q compila nuestro microservicio, q esta dentro de /microservices/car-service
+
+              books: -> servicio 4, "books" sería el nombre del servicio, este s l microservicio para los libros
+                build: ./microservices/book-service -> le decimos con l ".", q s l archivo Dockerfile, q s l q compila nuestra aplicacion, q esta dentro de /microservices/book-service
+
+              nginx: -> servicio 5, "nginx" seria el nombre del servicio, configuramos diferente este servicio ya que no lo compilamos con Dockerfile, por eso no tenemos el build.
+                image: nginx:latest  -> imagen q descargamos de Docker Hub s l servidor nginx
+                ports: -> puertos para el servidor portContenedor:portHost
+                  - "8080:8080"
+                volumes: -> Creamos el volumen porque la configuracion de este servicio(container) c basa en un archivo de configuracion d nginx creado por nosotros.
+                  - ./nginx.conf:/etc/nginx/conf.d/default.conf -> "./nginx.conf" nuestro archivo nginx de configuracion, "/etc/nginx/conf.d/default.conf" ruta n l container aqui se pasaran los valores de configuracion
+                depends_on:  --> dependencias de este servicio de "nginx" para q c ejecute
+                  - monolithic -> Servicio 1
+                  - users -> Servicio 2
+                  - books -> Servicio 3
+                  - cars -> Servicio 4
+Paso 7: Compilar las configuraciones con docker:
+  7.1 Compilar los archivos de configuracion para los microservicios, ejecutar comando dentro de la ruta "Microservices Section": 
+      Ejecutar comando: docker-compose up --build
+        este comando lo q hace es ejecutar el archivo docker-compose.yml y este archivo ejecuta el Dockerfile que tengan los servicios, ademas
+        tambien ejecuta nuestro archivo nginx.conf pasando los valores de configuracion al cantainer nginx q creara docker.
+Paso 8: Tarea, Crear microservicios con un lenguajes de programacion diferente.
+Nota: En este ejemplo basico nos basamos n q l servicio de get usuarios era el mas demandado por el cliente por ello nos vimos a la necesidad
+  d duplicar el servicio con la arquitectura de microservicios, siendo esto un aprovechamiento de mencionada arquitectura.
+  los demas microservicios fueron para mero entendimiento.
+

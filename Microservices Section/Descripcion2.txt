@@ -1,0 +1,17 @@
+**implementacion de microservicios**
+    Empezando el codigo para la app monolitica
+
+paso 1: Crear la carpeta monolithic, aqui estara nuestra api monolitica, por lo tanto aqui ejecutamos los sig comandos.
+    1.1 Iniciar proyecto NodeJs, ejecutar comando "npm init -i"
+        "-i": configuracion por defecto.
+    1.2 Instalar Express, Ejecutar comando "npm i express"
+    1.3 Crear la carpeta src
+        1.3.1 crear el archivo app.js, aqui configuramos las rutas.
+    1.4 Crear el archivo index.js, es el archivo para ejecutar el server.
+    1.5 configurar el Script Start de nuestro package.json, ingresarle el comando "node index.js"
+        para ejecutar la app con npm start.
+    1.6 Ejecutar la app, como no tenemos ninguna variable de entorno configurada con el puerto el namespace "process.env.PORT" no funcionara
+        para esto podemos ejecutar el sig comando Sistemas Windows Power Shell(PS) "$env:PORT="3000" ; node index, En  Sistemas unix "PORT=3000 node index".
+            "PORT:3000" : inyectamos el valor al puerto "process.env.PORT"
+    1.7 Probar la app, http://localhost:3000/api/v1/users
+        Debera retornar el  array de usuarios

@@ -1,0 +1,20 @@
+**Microservicios**
+
+Para entender los Microservicios es necesario entender la arquitectura monolitica q s la q c a venido desarrollando desarrollando
+desde hace mucho tiempo, esta arquitectura esta basada en un unico ejecutable logico, un buen ejemplo s cuando creamos un proyecto
+con una arquitectura MVC a pesar q s buena practica s todavia una arquitectura monolitica.
+
+Concepto Arq. monolitica: Es un unico ejecutable lógico, una sola unidad autónoma.
+Tipo de escalabilidad: 
+	Escalabilidad horizontal: Aqui aumentamos los recursos del hardware por ejemplo en un servidor podemos requerir aumentar memoria ram, procesador mas potente, etc.
+	Escalabilidad vertical: Aqui cambiamos una estrategia de implementacion de nuestro software por ejemplo las maquinas virtuales o contenedores los replicamos varias
+		veces pero se nos complica ya q tenemos q controlar dichos contenedores como aplicar un balanceador de carga y si un servicio duplicado deja de funcionar los
+		demas funcionen por él.
+		Netflix tardó 8 años en aplicar microservicios.
+
+Ventajas de las aplicaciones monoliticas:
+	Simples de desarrollar, simples de probar, facilidad para trabajar solo, simples de desplegar.
+Desventajas de las aplicaciones monoliticas:
+	No son flexibles, Dificiles de mantener, Dificiles de escalar, potencial poco confiable.
+
+Concepto de microservicios: es una arquitectura que es una coleccion de servicios autónomos y pequeños con responsabilidades unicas.

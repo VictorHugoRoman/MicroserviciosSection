@@ -1,0 +1,68 @@
+**implementacion Docker**
+    Vamos a dockerizar la app monolitica
+
+paso 1: Agregar el archivo Dockerfile, dentro de monolithic.
+    Entendiendo el archivo:
+        FROM node -> desde node, donde node es la imagen q tenemos 
+        COPY . /app -> copiamos todo lo q esta en raiz "." a la ruta "/app" q tendra el contenedor
+        WORKDIR /app -> directorio contexto de los comandos q c ejecutaran n l contenedor, todos los comandos q requieran el directorio tendran el valor "/app"
+        RUN npm install --only=production -> instalara todas las dependencias de la app una vez levantado el contenedor, ademas la app se contruye como produccion
+        ENV PORT 3000 -> Creamos la variable de entorno PORT para el puerto de nuestra app, para agregar mas variables hacemos lo mismo con otra instruaccion abajo
+        EXPOSE 3000 -> puerto para el mapeo con nuestro host, es decir q mediante nuestro host podemos acceder a la app por este puerto
+        ENTRYPOINT ["npm", "start"] -> levantamos nuestra app en el contenedor.
+    Comandos de Docker: FROM, COPY, WORKDIR, RUN, ENV, EXPOSE, ENTRYPOINT.
+    Nota: vamos a correr nuestro Dockerfile desde docker-compose.
+Paso 2: Descargar la imagen de nginx desde Docker Hub, lo meteremos en servicios en nuestro docker-compose para usarlo de Gateway para los microservicios.
+        comando para descargar imagen "docker pull nginx".
+    2.1 Crear el archivo nginx.conf, es un archivo de configuracion de nginx q servirá para el container de Docker.
+        como no es un archivo para la app monolithic en sí lo podemos poner en "Microservicios Section".
+        podemos ponerle cualquier nombre pero es buena practica poner nombres relativos.
+        Entendiendo el archivo:
+            Configuracion monolitica:
+                server { --> define el servidor principal en nginx.conf
+                    listen 8080; --> directiva q define l puerto a utilizar para las solicitudes entrantes y no el puerto predeterminado. para nuestra api gateway 
+                    location / { --> cuando hacen request a esta ruta de barra se redirecciona a proxy_pass
+                        proxy_pass http://monolithic:3000; --> nuestro servicio monolithic, es la configuracion q tenemos en el Dockerfile, 
+                                                                monolithic es el nombre de la ip de la red interna de Docker viene del DockerCompose de services > monolithic. Una vez q c cree dicho servicio
+                    }   
+                }
+            Configuracion MicroServicios:
+            server { --> define el servidor principal en nginx.conf
+                listen 8080; --> directiva q define l puerto a utilizar para las solicitudes entrantes y no el puerto predeterminado. para nuestra api gateway 
+                location /api/v2/users {
+                    proxy_pass http://users:3000/api/v2/users;
+                }
+
+                location /api/v2/books {
+                    proxy_pass http://books:3000/api/v2/books;
+                }
+
+                location /api/v2/cars {
+                    proxy_pass http://cars:3000/api/v2/cars;
+                }
+
+                location / {
+                    proxy_pass http://monolithic:3000/;
+                }
+            }        
+paso 3: Agregar el archivo docker-compose.yml, dentro de Microservices Section.
+    Entendiendo el archivo:
+        Configuracion monolitica:
+            version: "3" -> version de nuestro docker-compose, esto porque docker evoluciona e integra nuevas instruccion y tecnicas en las mismas
+            services: -> tag para los servicios
+              monolithic: -> servicio 1, monolithic sería el nombre del servicio, este es nuestra app
+                build: ./monolithic  -> le decimos con l ".", q s l archivo Dockerfile, q s l q compila nuestra aplicacion, q esta dentro de monolithic
+
+              nginx: -> servicio 2, "nginx" seria el nombre del servicio, configuramos diferente este servicio ya que no lo compilamos con Dockerfile, por eso no tenemos el build.
+                image: nginx:latest  -> imagen q descargamos de Dokcer Hub del servidor nginx
+                ports:  -> puertos para el servidor portContenedor:portHost
+                  - "8080:8080"
+                volumes:  -> Creamos el volumen porque la configuracion de este servicio(container) c base en un archivo de configuracion d nginx creado por nosotros.
+                  - ./nginx.conf : /etc/nginx/conf.d/default.conf -> nuestro nginx.config "./nginx.conf" lo vamos a mapear ":" a la ruta default donde nginx guarda
+                                                                     su archivo de configuracion por defecto "/etc/nginx/conf.d/default.conf" ya seria en el contenedor de Docker
+                depends_on: -> Este servicio de nginx dependera d los sig servicios
+                  - monolithic -> servicio 1 nuestra api monolithic, con esto le decimos a nginx q para q se levante tiene q estar corriendo el servicio monolithic
+Paso 4: Compilar las configuracion con docker:
+  4.1 Compilar los archivos de configuracion para la app monolithic:
+    para ello lo q hice fue cambiar los nombre a los archivos para diferenciarlos con los archivos de configuracion de la app monolitica.
+    4.1.1: Ejecutar comando comando: docker-compose up --build
